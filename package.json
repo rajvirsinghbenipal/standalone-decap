@@ -1,0 +1,16 @@
+{
+  "name": "decap-stand-alone",
+  "version": "1.0.0",
+  "description": "Decap CMS with Vercel Auth",
+  "main": "index.js",
+  "scripts": {
+    "start": "echo 'No start script needed for this project'"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "decap-cms": "^3.6.4",
+    "simple-oauth2": "^5.1.0"
+  }
+}
