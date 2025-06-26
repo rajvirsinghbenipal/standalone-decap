@@ -1,0 +1,16 @@
+backend:
+  name: github
+  repo: rajvirsinghbenipal/hugo-content
+  branch: pre-release # Or 'main' if that's what you're using now
+  auth_type: pkce
+  app_id: Ov23liDQxMotQOnJcxBv # The Client ID of your OAuth App
+
+media_folder: "assets/uploads"
+
+collections:
+  - name: "posts"
+    label: "Posts"
+    folder: "_posts"
+    create: true
+    fields:
+      - {label: "Title", name: "title", widget: "string"}
