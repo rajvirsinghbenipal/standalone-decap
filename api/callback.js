@@ -1,63 +1,44 @@
 const { AuthorizationCode } = require('simple-oauth2');
+const cookie = require('cookie');
 
 module.exports = async (req, res) => {
-  console.log("--- /api/callback function started ---");
-
   const { code } = req.query;
-  console.log("Received temporary code from GitHub:", code);
+  const cookies = cookie.parse(req.headers.cookie || '');
+  const code_verifier = cookies.pkce_verifier;
 
-  if (!code) {
-    console.error("Error: No temporary code received from GitHub.");
-    return res.status(400).send("Missing authorization code from GitHub.");
+  if (!code || !code_verifier) {
+    return res.status(400).json({ error: 'Missing code or verifier.' });
   }
 
-  const config = {
+  const client = new AuthorizationCode({
     client: {
       id: process.env.OAUTH_CLIENT_ID,
-      secret: process.env.OAUTH_CLIENT_SECRET
+      secret: process.env.OAUTH_CLIENT_SECRET,
     },
     auth: {
       tokenHost: 'https://github.com',
       tokenPath: '/login/oauth/access_token',
-      authorizePath: '/login/oauth/authorize'
-    }
-  };
-
-  const client = new AuthorizationCode(config);
+    },
+  });
 
   try {
-    console.log("Attempting to exchange code for an access token...");
-    const accessToken = await client.getToken({ code });
-    const token = accessToken.token.access_token;
-    
-    console.log("Successfully received access token!");
-    // For security, let's not log the token itself, just that we got it.
+    const accessToken = await client.getToken({
+      code,
+      redirect_uri: `https://punjabi-news-admin.vercel.app/callback`,
+      code_verifier, // Send the proof key to GitHub
+    });
 
-    const response = `
-      <!DOCTYPE html><html><head><meta charset="utf-8"><title>Authorizing...</title></head><body>
-      <script>
-        console.log("Sending postMessage to opener window...");
-        window.opener.postMessage('authorization:github:success:${JSON.stringify({
-          token: token,
-          provider: 'github'
-        })}', '*')
-        window.close()
-      </script>
-      </body></html>
-    `;
-    
-    console.log("Sending final HTML response to the browser to close the popup.");
-    res.status(200).send(response);
-    console.log("--- /api/callback function finished successfully ---");
+    res.setHeader('Set-Cookie', cookie.serialize('pkce_verifier', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV !== 'development',
+      expires: new Date(0),
+      path: '/',
+    }));
+
+    res.status(200).json({ token: accessToken.token.access_token });
 
   } catch (error) {
-    console.error("---!! ERROR in /api/callback !! ---");
-    console.error("Failed to get access token:", error.message);
-    // Log the full error context if available
-    if (error.response) {
-      console.error("Error Response Status:", error.response.status);
-      console.error("Error Response Data:", error.response.data);
-    }
-    res.status(500).json({ error: 'Authentication failed during token exchange.' });
+    console.error('PKCE Access Token Error:', error.message);
+    res.status(500).json({ error: 'Authentication failed.' });
   }
 };

@@ -1,28 +1,23 @@
-const { AuthorizationCode } = require('simple-oauth2'); // <-- FIX #1: Capital 'A'
+const pkceChallenge = require('pkce-challenge');
+const cookie = require('cookie');
 
-// This is the function that starts the login process
 module.exports = (req, res) => {
-  const config = {
-    client: {
-      id: process.env.OAUTH_CLIENT_ID,
-      secret: process.env.OAUTH_CLIENT_SECRET
-    },
-    auth: {
-      tokenHost: 'https://github.com',
-      tokenPath: '/login/oauth/access_token',
-      authorizePath: '/login/oauth/authorize'
+  const challenge = pkceChallenge(128);
+
+  // Store the verifier in a secure, HttpOnly cookie
+  res.setHeader('Set-Cookie', cookie.serialize(
+    'pkce_verifier', 
+    challenge.code_verifier, 
+    {
+      httpOnly: true,
+      secure: process.env.NODE_ENV !== 'development',
+      maxAge: 60 * 15, // 15 minutes
+      path: '/',
     }
-  };
-
-  const client = new AuthorizationCode(config); // <-- FIX #2: Capital 'A'
-
-  // We redirect the user to GitHub's authorization page
-  const authorizationUri = client.authorizeURL({
-    redirect_uri: `https://punjabi-news-admin.vercel.app/api/callback`,
-    scope: 'repo,user',
-    state: '3(#0/!~'
+  ));
+  
+  // Send the code challenge to the frontend
+  res.status(200).json({
+    code_challenge: challenge.code_challenge,
   });
-
-  res.writeHead(302, { Location: authorizationUri });
-  res.end();
 };

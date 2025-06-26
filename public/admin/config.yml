@@ -1,11 +1,13 @@
 backend:
   name: github
-  repo: rajvirsinghbenipal/hugo-content
+  repo: rajvirsinghbenipal/hugo-content # Or your test repo
   branch: pre-release
-  base_url: https://punjabi-news-admin.vercel.app
-  auth_endpoint: /api/auth
+  
+  # PKCE Authentication settings for Vercel
+  auth_type: pkce
+  app_id: Ov23liDQxMotQOnJcxBv # Your GitHub OAuth App Client ID
 
-# Using a minimal config to rule out any formatting errors
+# A minimal collection for testing
 media_folder: "assets/uploads"
 collections:
   - name: "posts"
